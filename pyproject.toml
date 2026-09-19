@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rnd-estimator"
+version = "0.2.0"
+description = "Arbitrage-aware nonparametric risk-neutral density estimation with lognormal mixtures"
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [{name = "qiuqiuqiu12277"}]
+dependencies = [
+  "numpy>=1.23,<3",
+  "scipy>=1.9,<2",
+  "matplotlib>=3.6,<4",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=7.4,<9",
+  "pytest-cov>=4.1,<7",
+  "ruff>=0.6,<1",
+]
+
+[project.scripts]
+rnd-estimate = "rnd_estimator.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["rnd_estimator*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
