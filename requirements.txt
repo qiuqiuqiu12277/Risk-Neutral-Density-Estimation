@@ -1,6 +1,3 @@
-numpy
-scipy
-cvxpy
-matplotlib
-tqdm
-pandas
+numpy>=1.23,<3
+scipy>=1.9,<2
+matplotlib>=3.6,<4
