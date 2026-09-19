@@ -22,3 +22,14 @@ jobs:
       - run: ruff format --check .
       - run: pytest --cov=rnd_estimator --cov-report=term-missing
       - run: rnd-estimate simulate --runs 3 --seed 42 --no-plot
+      - run: >-
+          rnd-estimate compare
+          --input data/sample_option_chain.csv
+          --spot 100
+          --maturity 0.25
+          --rate 0.03
+          --dividend-yield 0.01
+          --annual-volatility 0.22
+          --component-candidates 5 7
+          --folds 3
+          --no-plot

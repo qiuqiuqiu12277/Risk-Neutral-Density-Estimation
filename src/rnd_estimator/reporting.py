@@ -10,6 +10,7 @@ import numpy as np
 
 from .calibration import FitResult
 from .distributions import lognormal_mixture_pdf
+from .model_selection import ModelComparisonResult
 from .simulation import SimulationResult
 
 
@@ -151,3 +152,36 @@ def save_fit_report(
         plt.close(figure)
         paths["figure"] = figure_path
     return paths
+
+
+def save_model_comparison_report(
+    result: ModelComparisonResult,
+    output_dir: Union[str, Path],
+) -> dict[str, Path]:
+    """Write model-selection summary and fold-level audit data."""
+
+    output = Path(output_dir)
+    output.mkdir(parents=True, exist_ok=True)
+    summary_path = output / "model_comparison.json"
+    folds_path = output / "cross_validation_folds.csv"
+    _write_json(summary_path, result.to_summary())
+
+    fieldnames = [
+        "model",
+        "components",
+        "fold",
+        "status",
+        "train_records",
+        "validation_records",
+        "annual_volatility",
+        "train_rmse",
+        "validation_rmse",
+        "validation_mae",
+        "error",
+    ]
+    with folds_path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        for row in result.fold_results:
+            writer.writerow({name: row.get(name) for name in fieldnames})
+    return {"comparison": summary_path, "folds": folds_path}
