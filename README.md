@@ -19,6 +19,8 @@ martingale condition.
 - Smoothness-regularized constrained calibration with explicit failure reporting
 - Call-price bound, monotonicity, and convexity diagnostics
 - Density moments: mean, variance, standard deviation, skewness, and kurtosis
+- Deterministic strike-holdout cross-validation for mixture-complexity selection
+- Out-of-sample RMSE/MAE comparison against a fitted Black--Scholes baseline
 - Reproducible Monte Carlo experiments with pointwise 95% intervals
 - Validated offline CSV input using either prices or bid/ask quotes
 - JSON/CSV reports, diagnostic figures, a CLI, tests, linting, and CI
@@ -73,6 +75,27 @@ rnd-estimate fit \
   --output-dir artifacts/sample-fit
 ```
 
+Select mixture complexity and benchmark it out of sample:
+
+```bash
+rnd-estimate compare \
+  --input data/sample_option_chain.csv \
+  --spot 100 \
+  --maturity 0.25 \
+  --rate 0.03 \
+  --dividend-yield 0.01 \
+  --annual-volatility 0.22 \
+  --component-candidates 5 7 9 11 \
+  --folds 4 \
+  --output-dir artifacts/model-comparison
+```
+
+The comparison command holds out interleaved strikes, calibrates every candidate only on the
+remaining quotes, and selects the smallest-RMSE candidate (breaking exact ties in favor of the
+simpler model). The same folds fit a constant-volatility Black--Scholes benchmark and reports
+which model has the lower aggregate holdout RMSE. This avoids
+claiming model quality from in-sample fit alone and leaves a fold-level audit trail.
+
 Both commands can also be invoked as `python -m rnd_estimator ...`. Use `--no-plot` in
 headless jobs.
 
@@ -110,6 +133,13 @@ Fit mode writes:
 - `fitted_prices.csv` — observed values, fitted values, and residuals
 - `fit_diagnostics.png` — call fit and estimated density
 
+Comparison mode additionally writes:
+
+- `model_comparison.json` — selected component count plus aggregate out-of-sample metrics
+- `cross_validation_folds.csv` — train/validation errors, fitted baseline volatility, and status
+  for every fold
+- the standard fitted-price, density, and diagnostic outputs for the selected final model
+
 ## Project layout
 
 ```text
@@ -123,6 +153,7 @@ Fit mode writes:
 │   ├── data.py
 │   ├── diagnostics.py
 │   ├── distributions.py
+│   ├── model_selection.py
 │   ├── pricing.py
 │   ├── reporting.py
 │   └── simulation.py
@@ -149,6 +180,7 @@ The test suite checks, among other things:
 - fitted weights are non-negative and sum to one;
 - model prices satisfy static call-option no-arbitrage conditions;
 - identical seeds produce identical reports;
+- strike-holdout model selection is deterministic and benchmarked against Black--Scholes;
 - the complete CSV-to-report workflow runs offline.
 
 ## Interpretation and limitations
@@ -158,6 +190,11 @@ physical real-world return distribution. Results remain sensitive to quote quali
 selection, rate/dividend assumptions, component width, and regularization. Bid/ask cleaning and
 cross-maturity surface construction should be added before using the estimator on production
 market feeds.
+
+Strike-fold cross-validation is an interpolation diagnostic for one maturity, not evidence that
+the model predicts future markets. Very small or sparse chains can make rankings unstable; report
+the fold table and sensitivity to component grids instead of presenting one selected count as a
+universal optimum.
 
 Historical analysis requires historical option-chain snapshots matched to the spot and date.
 The project intentionally does not combine historical spot prices with a current option chain.
